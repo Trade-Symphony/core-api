@@ -25,8 +25,8 @@ func main() {
 	// Enable CORS for all origins
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, User-Agent, X-Forwarded-For")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, PATCH")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, User-Agent, X-Forwarded-For, X-API-Key")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
@@ -39,12 +39,17 @@ func main() {
 	// Create rate limiter
 	rateLimiter := middleware.NewRateLimiter()
 
+	// Apply API key middleware to all routes
+	r.Use(middleware.APIKeyAuth())
+
 	// Auth routes
 	auth := r.Group("/auth")
 	{
 		auth.POST("/register", rateLimiter.RateLimit(), handlers.Register)
 		auth.POST("/login", rateLimiter.RateLimit(), handlers.Login)
 		auth.POST("/session", rateLimiter.RateLimit(), handlers.VerifySession)
+		auth.POST("/password-reset", rateLimiter.RateLimit(), handlers.RequestPasswordReset)
+		auth.PATCH("/password-reset", rateLimiter.RateLimit(), handlers.ConfirmPasswordReset)
 	}
 
 	// Start server
