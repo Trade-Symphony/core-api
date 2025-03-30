@@ -11,9 +11,9 @@ import (
 )
 
 func main() {
-	// Load environment variables
+	// Load .env file if it exists
 	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
+		log.Println("No .env file found, using environment variables")
 	}
 
 	// Initialize database
@@ -39,17 +39,22 @@ func main() {
 	// Create rate limiter
 	rateLimiter := middleware.NewRateLimiter()
 
-	// Apply API key middleware to all routes
-	r.Use(middleware.APIKeyAuth())
+	// Public endpoints (no API key required)
+	r.GET("/health", handlers.HealthCheck)
 
-	// Auth routes
-	auth := r.Group("/auth")
+	// Protected endpoints
+	protected := r.Group("/")
+	protected.Use(middleware.APIKeyAuth())
 	{
-		auth.POST("/register", rateLimiter.RateLimit(), handlers.Register)
-		auth.POST("/login", rateLimiter.RateLimit(), handlers.Login)
-		auth.POST("/session", rateLimiter.RateLimit(), handlers.VerifySession)
-		auth.POST("/password-reset", rateLimiter.RateLimit(), handlers.RequestPasswordReset)
-		auth.PATCH("/password-reset", rateLimiter.RateLimit(), handlers.ConfirmPasswordReset)
+		// Auth routes
+		auth := protected.Group("/auth")
+		{
+			auth.POST("/register", rateLimiter.RateLimit(), handlers.Register)
+			auth.POST("/login", rateLimiter.RateLimit(), handlers.Login)
+			auth.POST("/session", rateLimiter.RateLimit(), handlers.VerifySession)
+			auth.POST("/password-reset", rateLimiter.RateLimit(), handlers.RequestPasswordReset)
+			auth.PATCH("/password-reset", rateLimiter.RateLimit(), handlers.ConfirmPasswordReset)
+		}
 	}
 
 	// Start server
