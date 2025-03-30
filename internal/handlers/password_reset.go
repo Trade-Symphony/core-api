@@ -71,11 +71,16 @@ func RequestPasswordReset(c *gin.Context) {
 		return
 	}
 
-	// TODO: Send email with reset token
-	// For development, we'll just print the token
+	// Print token to console for debugging
 	fmt.Printf("Password reset token for %s: %s\n", user.Email, token)
 
-	c.JSON(http.StatusCreated, gin.H{"success": true})
+	// Return token in response (for development/testing only)
+	c.JSON(http.StatusCreated, gin.H{
+		"success": true,
+		"token": token,
+		"expires_at": reset.ExpiresAt,
+		"note": "WARNING: Returning token in response is for development/testing only. In production, this should be sent via email.",
+	})
 }
 
 func ConfirmPasswordReset(c *gin.Context) {
