@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/sasvidu/tradesymphony/internal/handlers"
+	"github.com/sasvidu/tradesymphony/internal/middleware"
 )
 
 func main() {
@@ -31,8 +32,11 @@ func main() {
 		c.Next()
 	})
 
-	// Public endpoints (no API key required)
 	r.GET("/health", handlers.HealthCheck)
+
+	auth := r.Group("/auth")
+	auth.Use(middleware.AuthMiddleware())
+	auth.GET("/check", handlers.CheckAuth)
 
 	// Start server
 	if err := r.Run(":5005"); err != nil {
